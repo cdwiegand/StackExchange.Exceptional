@@ -34,11 +34,11 @@ namespace StackExchange.Exceptional.Postgres
         {
             _displayCount = Math.Min(settings.Size, MaximumDisplayCount);
 
-            _connectionString = settings.ConnectionString.IsNullOrEmpty()
+            _connectionString = !string.IsNullOrEmpty(settings.ConnectionString)
                 ? GetConnectionStringByName(settings.ConnectionStringName)
                 : settings.ConnectionString;
 
-            if (_connectionString.IsNullOrEmpty())
+            if (string.IsNullOrEmpty(_connectionString))
                 throw new ArgumentOutOfRangeException("settings", "A connection string or connection string name must be specified when using a SQL error store");
         }
 
@@ -59,7 +59,7 @@ namespace StackExchange.Exceptional.Postgres
         {
             _displayCount = Math.Min(displayCount, MaximumDisplayCount);
 
-            if (connectionString.IsNullOrEmpty()) throw new ArgumentOutOfRangeException("connectionString", "Connection string must be specified when using a SQL error store");
+            if (string.IsNullOrEmpty(connectionString)) throw new ArgumentOutOfRangeException("connectionString", "Connection string must be specified when using a SQL error store");
             _connectionString = connectionString;
         }
 
@@ -83,7 +83,7 @@ namespace StackExchange.Exceptional.Postgres
                 return c.Execute(@"
 Update Exceptions 
    Set IsProtected = 1, DeletionDate = Null
- Where GUID = @guid", new {guid}) > 0;
+ Where GUID = @guid", new { guid }) > 0;
             }
         }
 
@@ -99,7 +99,7 @@ Update Exceptions
                 return c.Execute(@"
 Update Exceptions 
    Set IsProtected = 1, DeletionDate = Null
- Where GUID In @guids", new {guids}) > 0;
+ Where GUID In @guids", new { guids }) > 0;
             }
         }
 
@@ -116,7 +116,7 @@ Update Exceptions
 Update Exceptions 
    Set DeletionDate = current_timestamp 
  Where GUID = @guid 
-   And DeletionDate Is Null", new {guid, ApplicationName}) > 0;
+   And DeletionDate Is Null", new { guid, ApplicationName }) > 0;
             }
         }
 
@@ -133,7 +133,7 @@ Update Exceptions
 Update Exceptions 
    Set DeletionDate = current_timestamp 
  Where GUID In @guids
-   And DeletionDate Is Null", new {guids}) > 0;
+   And DeletionDate Is Null", new { guids }) > 0;
             }
         }
 
@@ -151,7 +151,7 @@ Update Exceptions
                 return c.Execute(@"
 Delete From Exceptions 
  Where GUID = @guid
-   And ApplicationName = @ApplicationName", new {guid, ApplicationName}) > 0;
+   And ApplicationName = @ApplicationName", new { guid, ApplicationName }) > 0;
             }
         }
 
@@ -168,7 +168,7 @@ Update Exceptions
    Set DeletionDate = current_timestamp 
  Where DeletionDate Is Null 
    And IsProtected = 0 
-   And ApplicationName = @ApplicationName", new {ApplicationName = applicationName.IsNullOrEmptyReturn(ApplicationName)}) > 0;
+   And ApplicationName = @ApplicationName", new { ApplicationName = string.IsNullOrEmpty(applicationName) ? "" : applicationName }) > 0;
             }
         }
 
@@ -201,7 +201,7 @@ Update Exceptions
                     {
                         // Update the count and move on
                         error.GUID = existingException.First().GUID;
-                        c.Execute("Update Exceptions set DuplicateCount = DuplicateCount + @DuplicateCount where ID = @id", new {error.DuplicateCount, id = existingException.First().Id});
+                        c.Execute("Update Exceptions set DuplicateCount = DuplicateCount + @DuplicateCount where ID = @id", new { error.DuplicateCount, id = existingException.First().Id });
                     }
                     else
                     {
@@ -251,7 +251,7 @@ Values (@GUID, @ApplicationName, @MachineName, @CreationDate, @Type, @IsProtecte
                 sqlError = c.Query<Error>(@"
 Select * 
   From Exceptions 
- Where GUID = @guid", new {guid}).FirstOrDefault(); // a guid won't collide, but the AppName is for security
+ Where GUID = @guid", new { guid }).FirstOrDefault(); // a guid won't collide, but the AppName is for security
             }
             if (sqlError == null) return null;
 
@@ -275,7 +275,7 @@ Select *
   From Exceptions 
  Where DeletionDate Is Null
    And ApplicationName = @ApplicationName
-Order By CreationDate Desc limit @max", new {max = _displayCount, ApplicationName = applicationName.IsNullOrEmptyReturn(ApplicationName)}));
+Order By CreationDate Desc limit @max", new { max = _displayCount, ApplicationName = string.IsNullOrEmpty(applicationName) ? "" : applicationName }));
             }
 
             return errors.Count;
@@ -293,7 +293,7 @@ Select Count(*)
   From Exceptions 
  Where DeletionDate Is Null
    And ApplicationName = @ApplicationName" + (since.HasValue ? " And CreationDate > @since" : ""),
-                    new {since, ApplicationName = applicationName.IsNullOrEmptyReturn(ApplicationName)}).FirstOrDefault();
+                    new { since, ApplicationName = string.IsNullOrEmpty(applicationName) ? "" : applicationName }).FirstOrDefault();
             }
         }
 
